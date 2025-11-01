@@ -213,7 +213,7 @@ export class GdmLiveAudio extends LitElement {
         },
         tools: [{functionDeclarations: [showDirectionFunctionDeclaration]}],
         systemInstruction:
-          "You are a visual assistant. Your primary function is to interpret user prompts and determine if the answer is 'left' or 'right'. For every prompt, you MUST call the 'showDirection' function with either 'left' or 'right' as the argument. You must not provide any verbal response. The ONLY exception is if the user says exactly 'hi'. In that specific case, and only that case, you should respond verbally with a friendly greeting and nothing else. For all other inputs, you must use the 'showDirection' tool and remain silent.",
+          "You are a visual assistant. Your primary function is to interpret user prompts and determine if the answer is 'left' or 'right'. For every prompt, you MUST call the 'showDirection' function with either 'left' or 'right' as the argument. You must not provide any verbal response. The ONLY exception is if the user says exactly 'hi'. In that specific case, and only that case, you should respond verbally with a fun and friendly greeting explaining the game. Say something like: 'Hi there! Let's play a game. Ask me anything, and I'll do my best to answer by showing you a left or right arrow!'. For all other inputs, you must use the 'showDirection' tool and remain silent.",
       },
     });
 

@@ -167,6 +167,7 @@ export class GdmLiveAudioVisuals3D extends LitElement {
       spherePositions[i3 + 2] = p.z * radius;
 
       sphereNormals[i3] = p.x;
+      // FIX: Fix typo in sphere normal y-component assignment
       sphereNormals[i3 + 1] = p.y;
       sphereNormals[i3 + 2] = p.z;
 
@@ -271,9 +272,9 @@ export class GdmLiveAudioVisuals3D extends LitElement {
       roughness: 0.1,
       emissive: 0x330000,
       emissiveIntensity: 1.5,
+      // FIX: The `morphTargets` property must be set to true on the material to enable morph targets.
+      morphTargets: true,
     });
-    // FIX: The `morphTargets` property must be set to true on the material to enable morph targets.
-    sphereMaterial.morphTargets = true;
 
     sphereMaterial.onBeforeCompile = (shader) => {
       shader.uniforms.time = {value: 0};
