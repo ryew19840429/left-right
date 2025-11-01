@@ -5,7 +5,8 @@
 /* tslint:disable */
 
 import {LitElement, css, html} from 'lit';
-import {customElement, property} from 'lit/decorators.js';
+// FIX: Import the `query` decorator to get a reference to the canvas element.
+import {customElement, property, query} from 'lit/decorators.js';
 import {Analyser} from './analyser';
 
 @customElement('gdm-live-audio-visuals')
@@ -37,7 +38,8 @@ export class GdmLiveAudioVisuals extends LitElement {
     return this._inputNode;
   }
 
-  private canvas: HTMLCanvasElement;
+  // FIX: Use the `@query` decorator to get a reference to the canvas element.
+  @query('canvas') private canvas: HTMLCanvasElement;
   private canvasCtx: CanvasRenderingContext2D;
 
   static styles = css`
@@ -103,8 +105,7 @@ export class GdmLiveAudioVisuals extends LitElement {
 
   // FIX: LitElement lifecycle methods should be protected.
   protected firstUpdated() {
-    // FIX: Use `this.renderRoot` which is the Lit-specific equivalent of `this.shadowRoot` to resolve a typing error.
-    this.canvas = this.renderRoot.querySelector('canvas')!;
+    // FIX: The canvas element is now accessed via the `@query` decorator, so manual querying is no longer needed.
     this.canvas.width = 400;
     this.canvas.height = 400;
     this.canvasCtx = this.canvas.getContext('2d')!;

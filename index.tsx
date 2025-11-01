@@ -13,7 +13,7 @@ import {
   Type,
 } from '@google/genai';
 import {LitElement, css, html} from 'lit';
-import {customElement, state} from 'lit/decorators.js';
+import {customElement, query, state} from 'lit/decorators.js';
 import {createBlob, decode, decodeAudioData} from './utils';
 import './visual-3d';
 
@@ -34,12 +34,22 @@ const showDirectionFunctionDeclaration: FunctionDeclaration = {
   },
 };
 
+interface TranscriptionEntry {
+  speaker: 'user' | 'model';
+  text: string;
+}
+
 @customElement('gdm-live-audio')
 export class GdmLiveAudio extends LitElement {
   @state() isRecording = false;
   @state() status = '';
   @state() error = '';
   @state() private direction: 'left' | 'right' | null = null;
+  @state() private currentInputTranscription = '';
+  @state() private currentOutputTranscription = '';
+  @state() private transcriptionHistory: TranscriptionEntry[] = [];
+
+  @query('#subtitles') private subtitlesEl!: HTMLDivElement;
 
   private client: GoogleGenAI;
   private sessionPromise: Promise<Session>;
@@ -65,6 +75,60 @@ export class GdmLiveAudio extends LitElement {
       right: 0;
       z-index: 10;
       text-align: center;
+    }
+
+    #subtitles {
+      position: absolute;
+      top: 5vh;
+      left: 5vw;
+      right: 5vw;
+      z-index: 10;
+      max-height: 30vh;
+      overflow-y: auto;
+      padding: 1em;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 12px;
+      color: white;
+      font-family: sans-serif;
+      text-align: left;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.5) transparent;
+    }
+
+    #subtitles::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #subtitles::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #subtitles::-webkit-scrollbar-thumb {
+      background-color: rgba(255, 255, 255, 0.5);
+      border-radius: 4px;
+      border: 3px solid transparent;
+    }
+
+    #subtitles p {
+      margin: 0 0 0.5em;
+      padding: 0;
+      line-height: 1.4;
+    }
+
+    #subtitles strong {
+      font-weight: bold;
+    }
+
+    #subtitles .speaker-user strong {
+      color: #87cefa; /* Light Sky Blue */
+    }
+
+    #subtitles .speaker-model strong {
+      color: #ffb6c1; /* Light Pink */
+    }
+
+    #subtitles .is-live {
+      opacity: 0.7;
     }
 
     .controls {
@@ -108,6 +172,16 @@ export class GdmLiveAudio extends LitElement {
     this.initClient();
   }
 
+  updated(changedProperties: Map<string | number | symbol, unknown>) {
+    if (
+      changedProperties.has('transcriptionHistory') ||
+      changedProperties.has('currentInputTranscription') ||
+      changedProperties.has('currentOutputTranscription')
+    ) {
+      this.subtitlesEl.scrollTop = this.subtitlesEl.scrollHeight;
+    }
+  }
+
   private initAudio() {
     this.nextStartTime = this.outputAudioContext.currentTime;
   }
@@ -135,6 +209,7 @@ export class GdmLiveAudio extends LitElement {
           this.updateStatus('Opened');
         },
         onmessage: async (message: LiveServerMessage) => {
+          // Handle audio playback
           const audio =
             message.serverContent?.modelTurn?.parts[0]?.inlineData;
 
@@ -162,6 +237,7 @@ export class GdmLiveAudio extends LitElement {
             this.sources.add(source);
           }
 
+          // Handle interruption
           const interrupted = message.serverContent?.interrupted;
           if (interrupted) {
             for (const source of this.sources.values()) {
@@ -171,6 +247,33 @@ export class GdmLiveAudio extends LitElement {
             this.nextStartTime = 0;
           }
 
+          // Handle transcriptions
+          if (message.serverContent?.inputTranscription) {
+            this.currentInputTranscription +=
+              message.serverContent.inputTranscription.text;
+          } else if (message.serverContent?.outputTranscription) {
+            this.currentOutputTranscription +=
+              message.serverContent.outputTranscription.text;
+          }
+
+          if (message.serverContent?.turnComplete) {
+            const history = [...this.transcriptionHistory];
+            const fullInput = this.currentInputTranscription.trim();
+            const fullOutput = this.currentOutputTranscription.trim();
+
+            if (fullInput) {
+              history.push({speaker: 'user', text: fullInput});
+            }
+            if (fullOutput) {
+              history.push({speaker: 'model', text: fullOutput});
+            }
+            this.transcriptionHistory = history;
+
+            this.currentInputTranscription = '';
+            this.currentOutputTranscription = '';
+          }
+
+          // Handle tool calls
           if (message.toolCall) {
             for (const fc of message.toolCall.functionCalls) {
               if (fc.name === 'showDirection') {
@@ -218,6 +321,8 @@ export class GdmLiveAudio extends LitElement {
       },
       config: {
         responseModalities: [Modality.AUDIO],
+        inputAudioTranscription: {},
+        outputAudioTranscription: {},
         speechConfig: {
           // FIX: Use a supported voice name.
           voiceConfig: {prebuiltVoiceConfig: {voiceName: 'Zephyr'}},
@@ -324,11 +429,33 @@ export class GdmLiveAudio extends LitElement {
     this.sessionPromise?.then((session) => session.close());
     this.initSession();
     this.updateStatus('Session cleared.');
+    this.transcriptionHistory = [];
+    this.currentInputTranscription = '';
+    this.currentOutputTranscription = '';
   }
 
   render() {
     return html`
       <div>
+        <div id="subtitles">
+          ${this.transcriptionHistory.map(
+            (entry) =>
+              html` <p class="speaker-${entry.speaker}">
+                <strong>${entry.speaker === 'user' ? 'You' : 'Orb'}:</strong>
+                ${entry.text}
+              </p>`,
+          )}
+          ${this.currentInputTranscription
+            ? html`<p class="speaker-user is-live">
+                <strong>You:</strong> ${this.currentInputTranscription}
+              </p>`
+            : ''}
+          ${this.currentOutputTranscription
+            ? html`<p class="speaker-model is-live">
+                <strong>Orb:</strong> ${this.currentOutputTranscription}
+              </p>`
+            : ''}
+        </div>
         <div class="controls">
           <button
             id="resetButton"
