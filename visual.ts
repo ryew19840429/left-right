@@ -103,10 +103,11 @@ export class GdmLiveAudioVisuals extends LitElement {
 
   // FIX: LitElement lifecycle methods should be protected.
   protected firstUpdated() {
-    this.canvas = this.shadowRoot!.querySelector('canvas');
+    // FIX: Use `this.renderRoot` which is the Lit-specific equivalent of `this.shadowRoot` to resolve a typing error.
+    this.canvas = this.renderRoot.querySelector('canvas')!;
     this.canvas.width = 400;
     this.canvas.height = 400;
-    this.canvasCtx = this.canvas.getContext('2d');
+    this.canvasCtx = this.canvas.getContext('2d')!;
   }
 
   // FIX: LitElement's render method must be protected, not private.

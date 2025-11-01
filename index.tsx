@@ -182,18 +182,29 @@ export class GdmLiveAudio extends LitElement {
                   this.direction = direction;
                   setTimeout(() => {
                     this.direction = null;
+                    // Send response AFTER arrow disappears to trigger audio explanation
+                    this.sessionPromise.then((session) => {
+                      session.sendToolResponse({
+                        functionResponses: {
+                          id: fc.id,
+                          name: fc.name,
+                          response: {result: 'ok'},
+                        },
+                      });
+                    });
                   }, 2000); // Show for 2 seconds
-                }
-                // FIX: Use session promise to send tool response.
-                this.sessionPromise.then((session) => {
-                  session.sendToolResponse({
-                    functionResponses: {
-                      id: fc.id,
-                      name: fc.name,
-                      response: {result: 'ok'},
-                    },
+                } else {
+                  // If direction is not valid, send response immediately.
+                  this.sessionPromise.then((session) => {
+                    session.sendToolResponse({
+                      functionResponses: {
+                        id: fc.id,
+                        name: fc.name,
+                        response: {result: 'ok'},
+                      },
+                    });
                   });
-                });
+                }
               }
             }
           }
@@ -213,7 +224,7 @@ export class GdmLiveAudio extends LitElement {
         },
         tools: [{functionDeclarations: [showDirectionFunctionDeclaration]}],
         systemInstruction:
-          "You are a visual assistant. Your primary function is to interpret user prompts and determine if the answer is 'left' or 'right'. For every prompt, you MUST call the 'showDirection' function with either 'left' or 'right' as the argument. You must not provide any verbal response. The ONLY exception is if the user says exactly 'hi'. In that specific case, and only that case, you should respond verbally with a fun and friendly greeting explaining the game. Say something like: 'Hi there! Let's play a game. Ask me anything, and I'll do my best to answer by showing you a left or right arrow!'. For all other inputs, you must use the 'showDirection' tool and remain silent.",
+          "You are a directional assistant. Your SOLE purpose is to answer user questions by choosing either 'left' or 'right'. You MUST frame every answer within this binary concept. For any user prompt, you MUST FIRST call the `showDirection` function with your choice. Following the function call, you will provide a concise verbal explanation for your reasoning. Direct verbal answers without first calling the function are strictly forbidden. There is no such thing as a question that cannot be answered with 'left' or 'right'. Be as creative as possible; use metaphors, abstract connections, and lateral thinking to connect any topic to a direction. The ONLY exception is if the user says exactly 'hi'. In that case, and only that case, respond with: 'Hi there! Let's play a game. Ask me anything, and I'll do my best to answer by showing you a left or right arrow, and then tell you why!'.",
       },
     });
 

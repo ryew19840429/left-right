@@ -218,7 +218,7 @@ export class GdmLiveAudioVisuals3D extends LitElement {
         targetZ *= currentWidth;
       }
 
-      rightArrowPositions[i3] = x * 1.5;
+      rightArrowPositions[i3] = x * 4.5;
       rightArrowPositions[i3 + 1] = targetY;
       rightArrowPositions[i3 + 2] = targetZ;
 
@@ -241,7 +241,7 @@ export class GdmLiveAudioVisuals3D extends LitElement {
         targetZ *= currentWidth;
       }
 
-      leftArrowPositions[i3] = x * 1.5;
+      leftArrowPositions[i3] = x * 4.5;
       leftArrowPositions[i3 + 1] = targetY;
       leftArrowPositions[i3 + 2] = targetZ;
     }
@@ -272,9 +272,9 @@ export class GdmLiveAudioVisuals3D extends LitElement {
       roughness: 0.1,
       emissive: 0x330000,
       emissiveIntensity: 1.5,
-      // FIX: The `morphTargets` property must be set to true on the material to enable morph targets.
-      morphTargets: true,
     });
+    // FIX: The `morphTargets` property must be set to true on the material to enable morph targets. It cannot be set in the constructor.
+    sphereMaterial.morphTargets = true;
 
     sphereMaterial.onBeforeCompile = (shader) => {
       shader.uniforms.time = {value: 0};
@@ -424,7 +424,8 @@ export class GdmLiveAudioVisuals3D extends LitElement {
   }
 
   protected firstUpdated() {
-    this.canvas = this.shadowRoot!.querySelector('canvas') as HTMLCanvasElement;
+    // FIX: Use `this.renderRoot` which is the Lit-specific equivalent of `this.shadowRoot` to resolve a typing error.
+    this.canvas = this.renderRoot.querySelector('canvas') as HTMLCanvasElement;
     this.init();
   }
 
